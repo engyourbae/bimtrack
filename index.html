@@ -47,8 +47,8 @@ label.c{display:flex;gap:10px;align-items:center;font-size:13px;color:#5E6A63;te
   <h1>Hubungkan BIMTRACK</h1>
   <p>Tempel URL Web App Anda (yang berakhiran <b>/exec</b>) satu kali saja.</p>
   <input id="url" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" aria-label="URL Web App">
-  <p style="margin-top:4px">Login dengan beberapa akun Google di browser? Pilih <b>urutan akun</b> yang akan memakai aplikasi (1 = akun utama).</p>
-  <div class="chips" role="group" aria-label="Urutan akun Google"><button type="button" data-n="0">1</button><button type="button" data-n="1">2</button><button type="button" data-n="2">3</button><button type="button" data-n="3">4</button><button type="button" data-n="4">5</button></div>
+  <details style="width:100%;text-align:left"><summary style="cursor:pointer;font-size:13px;color:#5E6A63;min-height:36px">Opsi lanjutan: banyak akun Google</summary><p style="margin:6px 0">Login dengan beberapa akun Google di browser? Pilih <b>urutan akun</b> yang akan memakai aplikasi (1 = akun utama).</p>
+  <div class="chips" role="group" aria-label="Urutan akun Google"><button type="button" data-n="0">1</button><button type="button" data-n="1">2</button><button type="button" data-n="2">3</button><button type="button" data-n="3">4</button><button type="button" data-n="4">5</button></div></details>
   <div class="err" id="uerr" role="alert"></div>
   <button class="btn p" id="save">Simpan dan buka</button>
 </div></div>
@@ -61,8 +61,10 @@ label.c{display:flex;gap:10px;align-items:center;font-size:13px;color:#5E6A63;te
 <div id="help" hidden>
   <b>Belum tampil, atau muncul "Sorry, unable to open the file"?</b>
   <p>Login Google tidak bisa muncul di dalam bingkai. Buka sekali di tab biasa untuk masuk dan memberi izin, lalu kembali ke sini.</p>
+  <p class="sm" id="cur"></p>
   <p>Sering terjadi saat browser login ke beberapa akun Google. Coba pilih urutan akun lain:</p>
   <div class="chips" role="group" aria-label="Urutan akun Google"><button type="button" data-n="0">1</button><button type="button" data-n="1">2</button><button type="button" data-n="2">3</button><button type="button" data-n="3">4</button><button type="button" data-n="4">5</button></div>
+  <button class="btn" id="chooser">Pilih akun lewat Google</button>
   <button class="btn p" id="direct">Buka langsung (layar penuh)</button>
   <button class="btn" id="newtab">Masuk atau beri izin di tab baru</button>
   <button class="btn" id="reload">Muat ulang</button>
@@ -73,13 +75,15 @@ label.c{display:flex;gap:10px;align-items:center;font-size:13px;color:#5E6A63;te
 <script>
 (function(){
  const KEY='bimtrack_app_url',MODE='bimtrack_mode',DEFAULT_URL='';   // opsional: isi URL /exec di sini agar tidak perlu menempel
- const RE=/^https:\/\/script\.google\.com\/(a\/macros\/[\w.-]+\/|macros\/(u\/\d+\/)?)s\/[\w-]+\/exec$/;
+ const RE=/^https:\/\/script\.google\.com\/(a\/macros\/[\w.-]+\/|macros\/(u\/\d+\/)?)s\/[\w-]{40,}\/exec$/;
  const AK='bimtrack_acct',strip=u=>u.replace(/\/macros\/u\/\d+\//,'/macros/');
  let acct=parseInt((function(){try{return localStorage.getItem(AK)}catch(e){return 0}})()||'0',10)||0;
- const withAcct=u=>{const b=strip(u);return acct>0&&b.indexOf('/macros/s/')>0?b.replace('/macros/s/','/macros/u/'+acct+'/s/'):b};
+ const withAcct=u=>{const b=strip(u);return acct>0?b+(b.indexOf('?')>=0?'&':'?')+'authuser='+acct:b};
  const $=id=>document.getElementById(id);let url='',t=null,ready=false;
  const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
- const q=new URLSearchParams(location.search).get('app');
+ const sp=new URLSearchParams(location.search);
+ if(sp.get('reset')==='1'){ls.del(KEY);ls.del(MODE);ls.del(AK);acct=0;history.replaceState(null,'',location.pathname)}
+ const q=sp.get('app');
  if(q&&RE.test(q)){ls.set(KEY,strip(q));history.replaceState(null,'',location.pathname)}
  url=strip(ls.get(KEY)||DEFAULT_URL);
  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
@@ -88,11 +92,13 @@ label.c{display:flex;gap:10px;align-items:center;font-size:13px;color:#5E6A63;te
   if(!RE.test(url)){setup();return}
   if(ls.get(MODE)==='direct'){location.replace(withAcct(url));return}
   $('setup').hidden=true;$('load').hidden=false;$('load').classList.remove('out');ready=false;
+  const mm=/\/s\/([\w-]+)\/exec/.exec(url)||[];$('cur').textContent='Alamat dipakai: akun ke-'+(acct+1)+' · ID '+(mm[1]||'').slice(0,6)+'…'+(mm[1]||'').slice(-6)+' ('+(mm[1]||'').length+' karakter)';
   $('app').src=withAcct(url);clearTimeout(t);t=setTimeout(()=>{if(!ready)$('help').hidden=false},9000)}
  const paint=()=>document.querySelectorAll('.chips button').forEach(b=>b.classList.toggle('on',+b.dataset.n===acct));paint();
  document.addEventListener('click',e=>{const b=e.target.closest('.chips button');if(!b)return;acct=+b.dataset.n;ls.set(AK,String(acct));paint();if(!$('help').hidden){$('help').hidden=true;start()}});
- $('save').onclick=()=>{const v=$('url').value.trim();if(!RE.test(v)){$('uerr').textContent='URL tidak valid. Harus berbentuk https://script.google.com/macros/s/…/exec';return}
+ $('save').onclick=()=>{const v=$('url').value.trim();if(!RE.test(v)){$('uerr').textContent='URL tidak valid atau terpotong. Salin ulang dari Deploy → Manage deployments memakai ikon salin, bukan dari tulisan di layar.';return}
   $('uerr').textContent='';url=strip(v);ls.set(KEY,url);start()};
+ $('chooser').onclick=()=>window.open('https://accounts.google.com/AccountChooser?continue='+encodeURIComponent(strip(url)),'_blank','noopener');
  $('direct').onclick=()=>{if($('always').checked)ls.set(MODE,'direct');location.href=withAcct(url)};
  $('newtab').onclick=()=>window.open(withAcct(url),'_blank','noopener');
  $('reload').onclick=()=>{$('help').hidden=true;start()};
@@ -100,6 +106,7 @@ label.c{display:flex;gap:10px;align-items:center;font-size:13px;color:#5E6A63;te
  window.addEventListener('message',e=>{let h='';try{h=new URL(e.origin).hostname}catch(x){return}
   if(!/(^|\.)(google|googleusercontent)\.com$/.test(h)||!e.data||typeof e.data!=='object')return;
   if(e.data.bimtrack==='ready'){ready=true;clearTimeout(t);$('help').hidden=true;$('load').classList.add('out');setTimeout(()=>{$('load').hidden=true},450)}
+  if(e.data.bimtrack==='menu'){$('help').hidden=false}
   if(e.data.bimtrack==='theme'&&/^#[0-9A-Fa-f]{6}$/.test(e.data.bg||'')){document.body.style.background=e.data.bg;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=e.data.bg}});
  const off=()=>{$('off').hidden=navigator.onLine};window.addEventListener('online',off);window.addEventListener('offline',off);off();
  let ev=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();ev=e;if(!matchMedia('(display-mode: standalone)').matches)$('inst').hidden=false});
