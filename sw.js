@@ -1,6 +1,6 @@
 /* BIMTRACK service worker: menyimpan "cangkang" aplikasi agar terbuka cepat dan tidak putih saat offline.
    Data skripsi tetap diambil langsung dari Google (tidak pernah disimpan di cache ini). */
-const V = 'bimtrack-shell-v2';
+const V = 'bimtrack-shell-v3';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'maskable-512.png', 'apple-touch-icon.png', 'favicon.svg'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => {})))).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {
