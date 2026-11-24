@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BIMTRACK</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#23352F">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BIMTRACK">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#F5F6F2;color:#26332D;overflow:hidden;transition:background .3s}
+#shell{position:fixed;inset:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+iframe{width:100%;height:100%;border:0;display:block;background:transparent}
+.panel{position:fixed;inset:0;display:grid;place-items:center;padding:20px;background:#F5F6F2;z-index:5;transition:opacity .4s,visibility .4s}
+.panel[hidden]{display:none}.panel.out{opacity:0;visibility:hidden}
+.box{max-width:400px;width:100%;text-align:center;display:grid;gap:12px;justify-items:center}
+.logo{width:64px;height:64px;border-radius:18px;background:#23352F;display:grid;place-items:center}
+h1{font-size:20px}p{color:#5E6A63;font-size:14px}
+input{width:100%;min-height:48px;border:1px solid #CBD4CD;border-radius:12px;padding:0 14px;font-size:16px;background:#fff}
+.btn{min-height:46px;padding:0 20px;border-radius:12px;border:1px solid #CBD4CD;background:#fff;font:inherit;font-weight:600;color:#26332D;cursor:pointer;width:100%}
+.btn.p{background:#426B59;border-color:#426B59;color:#fff}
+.bar{width:160px;height:4px;background:#DCE8DF;border-radius:2px;overflow:hidden}.bar i{display:block;height:100%;width:40%;background:#426B59;animation:s 1.2s infinite}
+@keyframes s{from{transform:translateX(-100%)}to{transform:translateX(300%)}}
+.err{color:#C65B55;font-size:13px;min-height:18px}
+#help{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:6;background:#fff;border:1px solid #E3E8E3;border-radius:18px;padding:16px;display:grid;gap:8px;max-width:440px;margin:auto}
+#help[hidden]{display:none}
+#off{position:fixed;top:0;left:0;right:0;background:#7A5A22;color:#fff;text-align:center;font-size:13px;padding:6px;z-index:7;padding-top:calc(6px + env(safe-area-inset-top))}#off[hidden]{display:none}
+#inst{position:fixed;right:14px;top:calc(12px + env(safe-area-inset-top));z-index:6;min-height:40px;padding:0 16px;border-radius:20px;border:0;background:#426B59;color:#fff;font:inherit;font-weight:600;cursor:pointer}#inst[hidden]{display:none}
+h2{font-size:15px}.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.chips button{min-width:46px;min-height:46px;border-radius:12px;border:1px solid #CBD4CD;background:#fff;font:inherit;font-weight:600;color:#26332D;cursor:pointer}.chips button.on{background:#426B59;color:#fff;border-color:#426B59}
+label.c{display:flex;gap:10px;align-items:center;font-size:13px;color:#5E6A63;text-align:left}
+</style>
+</head>
+<body>
+<div id="off" hidden>Anda sedang offline. Data baru tampil setelah tersambung internet.</div>
+<div id="shell"><iframe id="app" title="BIMTRACK" allow="clipboard-write"></iframe></div>
+<button id="inst" hidden>Pasang aplikasi</button>
+
+<div class="panel" id="setup" hidden><div class="box">
+  <div class="logo"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#C49A58" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6"/><path d="M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div>
+  <h1>Hubungkan BIMTRACK</h1>
+  <p>Tempel URL Web App Anda (yang berakhiran <b>/exec</b>) satu kali saja.</p>
+  <input id="url" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" aria-label="URL Web App">
+  <p style="margin-top:4px">Login dengan beberapa akun Google di browser? Pilih <b>urutan akun</b> yang akan memakai aplikasi (1 = akun utama).</p>
+  <div class="chips" role="group" aria-label="Urutan akun Google"><button type="button" data-n="0">1</button><button type="button" data-n="1">2</button><button type="button" data-n="2">3</button><button type="button" data-n="3">4</button><button type="button" data-n="4">5</button></div>
+  <div class="err" id="uerr" role="alert"></div>
+  <button class="btn p" id="save">Simpan dan buka</button>
+</div></div>
+
+<div class="panel" id="load" hidden><div class="box">
+  <div class="logo"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#C49A58" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6"/><path d="M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div>
+  <h1>BIMTRACK</h1><p>Menyiapkan ruang kerja Anda…</p><div class="bar"><i></i></div>
+</div></div>
+
+<div id="help" hidden>
+  <b>Belum tampil, atau muncul "Sorry, unable to open the file"?</b>
+  <p>Login Google tidak bisa muncul di dalam bingkai. Buka sekali di tab biasa untuk masuk dan memberi izin, lalu kembali ke sini.</p>
+  <p>Sering terjadi saat browser login ke beberapa akun Google. Coba pilih urutan akun lain:</p>
+  <div class="chips" role="group" aria-label="Urutan akun Google"><button type="button" data-n="0">1</button><button type="button" data-n="1">2</button><button type="button" data-n="2">3</button><button type="button" data-n="3">4</button><button type="button" data-n="4">5</button></div>
+  <button class="btn p" id="direct">Buka langsung (layar penuh)</button>
+  <button class="btn" id="newtab">Masuk atau beri izin di tab baru</button>
+  <button class="btn" id="reload">Muat ulang</button>
+  <label class="c"><input type="checkbox" id="always" style="width:20px;min-height:0"> Selalu buka langsung di perangkat ini</label>
+  <button class="btn" id="chg">Ganti URL Web App</button>
+</div>
+
+<script>
+(function(){
+ const KEY='bimtrack_app_url',MODE='bimtrack_mode',DEFAULT_URL='';   // opsional: isi URL /exec di sini agar tidak perlu menempel
+ const RE=/^https:\/\/script\.google\.com\/(a\/macros\/[\w.-]+\/|macros\/(u\/\d+\/)?)s\/[\w-]+\/exec$/;
+ const AK='bimtrack_acct',strip=u=>u.replace(/\/macros\/u\/\d+\//,'/macros/');
+ let acct=parseInt((function(){try{return localStorage.getItem(AK)}catch(e){return 0}})()||'0',10)||0;
+ const withAcct=u=>{const b=strip(u);return acct>0&&b.indexOf('/macros/s/')>0?b.replace('/macros/s/','/macros/u/'+acct+'/s/'):b};
+ const $=id=>document.getElementById(id);let url='',t=null,ready=false;
+ const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+ const q=new URLSearchParams(location.search).get('app');
+ if(q&&RE.test(q)){ls.set(KEY,strip(q));history.replaceState(null,'',location.pathname)}
+ url=strip(ls.get(KEY)||DEFAULT_URL);
+ if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+ function setup(){$('setup').hidden=false;$('load').hidden=true;$('help').hidden=true}
+ function start(){
+  if(!RE.test(url)){setup();return}
+  if(ls.get(MODE)==='direct'){location.replace(withAcct(url));return}
+  $('setup').hidden=true;$('load').hidden=false;$('load').classList.remove('out');ready=false;
+  $('app').src=withAcct(url);clearTimeout(t);t=setTimeout(()=>{if(!ready)$('help').hidden=false},9000)}
+ const paint=()=>document.querySelectorAll('.chips button').forEach(b=>b.classList.toggle('on',+b.dataset.n===acct));paint();
+ document.addEventListener('click',e=>{const b=e.target.closest('.chips button');if(!b)return;acct=+b.dataset.n;ls.set(AK,String(acct));paint();if(!$('help').hidden){$('help').hidden=true;start()}});
+ $('save').onclick=()=>{const v=$('url').value.trim();if(!RE.test(v)){$('uerr').textContent='URL tidak valid. Harus berbentuk https://script.google.com/macros/s/…/exec';return}
+  $('uerr').textContent='';url=strip(v);ls.set(KEY,url);start()};
+ $('direct').onclick=()=>{if($('always').checked)ls.set(MODE,'direct');location.href=withAcct(url)};
+ $('newtab').onclick=()=>window.open(withAcct(url),'_blank','noopener');
+ $('reload').onclick=()=>{$('help').hidden=true;start()};
+ $('chg').onclick=()=>{ls.del(KEY);ls.del(MODE);url='';$('app').removeAttribute('src');setup()};
+ window.addEventListener('message',e=>{let h='';try{h=new URL(e.origin).hostname}catch(x){return}
+  if(!/(^|\.)(google|googleusercontent)\.com$/.test(h)||!e.data||typeof e.data!=='object')return;
+  if(e.data.bimtrack==='ready'){ready=true;clearTimeout(t);$('help').hidden=true;$('load').classList.add('out');setTimeout(()=>{$('load').hidden=true},450)}
+  if(e.data.bimtrack==='theme'&&/^#[0-9A-Fa-f]{6}$/.test(e.data.bg||'')){document.body.style.background=e.data.bg;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=e.data.bg}});
+ const off=()=>{$('off').hidden=navigator.onLine};window.addEventListener('online',off);window.addEventListener('offline',off);off();
+ let ev=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();ev=e;if(!matchMedia('(display-mode: standalone)').matches)$('inst').hidden=false});
+ $('inst').onclick=async()=>{if(!ev)return;ev.prompt();await ev.userChoice;ev=null;$('inst').hidden=true};
+ window.addEventListener('appinstalled',()=>{$('inst').hidden=true});
+ start();
+})();
+</script>
+</body>
+</html>
